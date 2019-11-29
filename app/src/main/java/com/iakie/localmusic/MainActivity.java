@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     // 数据源
     List<LocalMusicBean>mDatas;
     private LocalMusicAdapter adapter;
-    private int position;
+
     // 正在播放的位置
     int currnetPlayPosition = -1;
     // 暂停音乐时的位置
@@ -70,24 +70,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // 设置每一项的点击事件
         adapter.setOnItemClickListener(new LocalMusicAdapter.OnItemClickListener() {
             @Override
-            public void OnItemClick(View view, int possition) {
+            public void OnItemClick(View view, int position) {
                 currnetPlayPosition = position;
-                LocalMusicBean musicBean = mDatas.get(possition);
-                // 设置底部显示的歌手名称和歌曲名
-                singerTv.setText(musicBean.getSinger());
-                songTv.setText(musicBean.getSong());
-                stopMusic();
-                // 重置多媒体播放器
-                mediaPlayer.reset();
-                // 设置新的播放路径
-                try {
-                    mediaPlayer.setDataSource(musicBean.getPath());
-                    playMusic();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                LocalMusicBean musicBean = mDatas.get(position);
+                playMusicInMusicBean(musicBean);
             }
         });
+    }
+
+    public void playMusicInMusicBean(LocalMusicBean musicBean) {
+
+        // 根据传入对象播放音乐
+        // 设置底部显示的歌手名称和歌曲名
+        singerTv.setText(musicBean.getSinger());
+        songTv.setText(musicBean.getSong());
+        stopMusic();
+        // 重置多媒体播放器
+        mediaPlayer.reset();
+        // 设置新的播放路径
+        try {
+            mediaPlayer.setDataSource(musicBean.getPath());
+            playMusic();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -190,10 +196,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.local_music_bottom_iv_last:
-                // TODO
+                // 切换上一首音乐
+                if (currnetPlayPosition == 0) {
+                    Toast.makeText(this,"前边没有啦，已经是第一首了！",Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                currnetPlayPosition = currnetPlayPosition - 1;
+                LocalMusicBean lastBean = mDatas.get(currnetPlayPosition);
+                playMusicInMusicBean(lastBean);
                 break;
             case R.id.local_music_bottom_iv_next:
-                // TODO
+                // 切换下一首音乐
+                if (currnetPlayPosition == mDatas.size()-1) {
+                    Toast.makeText(this,"后边没有啦，已经是最后一首了！",Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                currnetPlayPosition = currnetPlayPosition + 1;
+                LocalMusicBean nextBean = mDatas.get(currnetPlayPosition);
+                playMusicInMusicBean(nextBean);
+                break;
             case R.id.local_music_bottom_iv_play:
                 if (currnetPlayPosition == -1) {
                     // 并没有选中播放的音乐
