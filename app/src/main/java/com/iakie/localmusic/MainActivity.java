@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.ContentResolver;
 import android.database.Cursor;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -14,9 +15,11 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.w3c.dom.Text;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -31,6 +34,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     // 数据源
     List<LocalMusicBean>mDatas;
     private LocalMusicAdapter adapter;
+    private int position;
+    // 正在播放的位置
+    int currnetPlayPosition = -1;
+    // 暂停音乐时的位置
+    int currentPausePositionInSong = 0;
+
+    MediaPlayer mediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         initView();
+        mediaPlayer = new MediaPlayer();
         mDatas = new ArrayList<>();
 
         // 创建适配器对象
@@ -50,6 +61,85 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // 加载本地数据源
         loadLocalMusicData();
+
+        // 设置每一项的点击事件
+        setEventListener();
+    }
+
+    private void setEventListener() {
+        // 设置每一项的点击事件
+        adapter.setOnItemClickListener(new LocalMusicAdapter.OnItemClickListener() {
+            @Override
+            public void OnItemClick(View view, int possition) {
+                currnetPlayPosition = position;
+                LocalMusicBean musicBean = mDatas.get(possition);
+                // 设置底部显示的歌手名称和歌曲名
+                singerTv.setText(musicBean.getSinger());
+                songTv.setText(musicBean.getSong());
+                stopMusic();
+                // 重置多媒体播放器
+                mediaPlayer.reset();
+                // 设置新的播放路径
+                try {
+                    mediaPlayer.setDataSource(musicBean.getPath());
+                    playMusic();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    /**
+     * 点击播放按钮
+     * 两种情况
+     * 1.播放音乐
+     * 2.从暂停状态开始播放
+     */
+    private void playMusic() {
+        // 播放音乐 两种情况
+        if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
+            if (currentPausePositionInSong == 0) {
+                // 从头开始播放
+                try {
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                // 从暂停状态到播放
+                mediaPlayer.seekTo(currentPausePositionInSong);
+                mediaPlayer.start();
+            }
+            playIv.setImageResource(R.mipmap.icon_pause);
+        }
+    }
+
+    private void pauseMusic() {
+        // 暂停音乐
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            currentPausePositionInSong = mediaPlayer.getCurrentPosition();
+            mediaPlayer.pause();
+            playIv.setImageResource(R.mipmap.icon_play);
+        }
+    }
+
+    private void stopMusic(){
+        // 停止播放
+        if (mediaPlayer!=null){
+            currentPausePositionInSong = 0;
+            mediaPlayer.pause();
+            mediaPlayer.seekTo(0);
+            mediaPlayer.stop();
+            playIv.setImageResource(R.mipmap.icon_play);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopMusic();
     }
 
     private void loadLocalMusicData() {
@@ -105,7 +195,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.local_music_bottom_iv_next:
                 // TODO
             case R.id.local_music_bottom_iv_play:
-                // TODO
+                if (currnetPlayPosition == -1) {
+                    // 并没有选中播放的音乐
+                    Toast.makeText(this, "请先选择想要播放的音乐",Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (mediaPlayer.isPlaying()) {
+                    // 此时正在播放
+                    pauseMusic();
+                }else {
+                    // 此时没有播放音乐，点击开始播放
+                    playMusic();
+                }
                 break;
         }
     }

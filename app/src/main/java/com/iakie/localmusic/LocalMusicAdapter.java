@@ -16,10 +16,20 @@ public class LocalMusicAdapter extends RecyclerView.Adapter<LocalMusicAdapter.Lo
     Context context;
     List<LocalMusicBean>mDatas;
 
+    OnItemClickListener onItemClickListener;
+
+    public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
+        this.onItemClickListener = onItemClickListener;
+    }
+
+    public interface OnItemClickListener{
+        public void OnItemClick(View view, int possition);
+    }
+
     public LocalMusicAdapter(Context context, List<LocalMusicBean> mDatas) {
         this.context = context;
         this.mDatas = mDatas;
-}
+    }
 
     @NonNull
     @Override
@@ -31,7 +41,7 @@ public class LocalMusicAdapter extends RecyclerView.Adapter<LocalMusicAdapter.Lo
     }
 
     @Override
-    public void onBindViewHolder(@NonNull LocalMusicViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull LocalMusicViewHolder holder, final int position) {
         // 绑定ViewHolder及控件的展示
         LocalMusicBean musicBean = mDatas.get(position);
         holder.idTv.setText(musicBean.getId());
@@ -39,6 +49,13 @@ public class LocalMusicAdapter extends RecyclerView.Adapter<LocalMusicAdapter.Lo
         holder.singerTv.setText(musicBean.getSinger());
         holder.albumTv.setText(musicBean.getAlbum());
         holder.timeTv.setText(musicBean.getDuration());
+
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onItemClickListener.OnItemClick(v,position);
+            }
+        });
     }
 
     @Override
